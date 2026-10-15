@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#102b25"><title>Mes Calories</title>
+<style>
+:root{font-family:system-ui,-apple-system,sans-serif;color:#19342e;background:#f3f7f3}*{box-sizing:border-box}body{margin:0}header{background:#102b25;color:white;padding:24px 18px 32px}main{max-width:650px;margin:-16px auto 30px;padding:0 14px}.card{background:white;border-radius:18px;padding:20px;margin-bottom:14px;box-shadow:0 3px 16px #143a2310}h1{font-size:26px;margin:0 0 6px}h2{font-size:18px;margin:0 0 14px}p{line-height:1.5}.muted{color:#61736d;font-size:13px}.big{font-size:38px;font-weight:800;color:#17644d}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}label{display:block;font-size:13px;font-weight:650;margin-bottom:6px}input,select{width:100%;padding:12px;border:1px solid #cbd9d0;border-radius:10px;background:white;font-size:16px;color:#18372d}button{background:#17644d;color:white;border:0;padding:13px 17px;border-radius:11px;font-weight:700;font-size:15px;cursor:pointer}button.secondary{background:#e5eee8;color:#245642}button.danger{background:#fff0ed;color:#a43d32;padding:8px 10px}button:active{opacity:.8}.row{display:flex;justify-content:space-between;align-items:center;gap:10px}.progress{height:14px;background:#e6efe8;border-radius:30px;overflow:hidden;margin:15px 0}.fill{height:100%;width:0;background:#37a478;transition:width .2s}.entry{border-top:1px solid #edf0ed;padding:11px 0}.small{font-size:13px}.note{background:#f0f7f2;padding:12px;border-radius:10px;font-size:13px}footer{text-align:center;color:#66776c;font-size:12px;padding:12px}
+</style></head><body>
+<header><div style="max-width:620px;margin:auto"><h1>🥗 Mes Calories</h1><div>Ton suivi quotidien pour maintenir ton poids</div></div></header>
+<main>
+<section class="card"><div class="row"><h2>Aujourd'hui</h2><input id="day" type="date" style="width:165px"></div><div class="grid"><div><div class="muted">Objectif journalier</div><div class="big" id="goal">—</div><div class="small">kcal</div></div><div><div class="muted">Restantes</div><div class="big" id="remaining">—</div><div class="small">kcal</div></div></div><div class="progress"><div class="fill" id="bar"></div></div><div id="consumed" class="muted">0 kcal consommées</div></section>
+<section class="card"><h2>Ton profil</h2><div class="grid"><div><label for="sex">Sexe (formule)</label><select id="sex"><option value="male">Homme</option><option value="female">Femme</option></select></div><div><label for="age">Âge (ans)</label><input id="age" type="number" min="18" max="110" value="41"></div><div><label for="weight">Poids (kg)</label><input id="weight" type="number" min="20" max="400" step=".1" value="88"></div><div><label for="height">Taille (cm)</label><input id="height" type="number" min="100" max="240" value="189"></div></div><p><label for="activity">Niveau d'activité</label><select id="activity"><option value="1.2">Sédentaire (peu de mouvement)</option><option value="1.375" selected>Légèrement actif (1 à 3 séances/semaine)</option><option value="1.55">Modérément actif (3 à 5 séances/semaine)</option><option value="1.725">Très actif (6 à 7 séances/semaine)</option><option value="1.9">Extrêmement actif (travail physique intense)</option></select></p><div class="note">Métabolisme de base : <strong id="bmr">—</strong> kcal/jour. Besoin d'entretien estimé : <strong id="tdee">—</strong> kcal/jour. Le calcul se met à jour automatiquement.</div></section>
+<section class="card"><h2>Ajouter un aliment ou repas</h2><form id="mealForm"><p><label for="meal">Aliment / repas</label><input id="meal" placeholder="Ex. riz cuit, poulet, pomme" required maxlength="90"></p><div class="grid"><div><label for="kcal100">Calories / 100 g</label><input id="kcal100" type="number" min="0" max="1000" step=".1" placeholder="Ex. 130" required></div><div><label for="grams">Quantité (g)</label><input id="grams" type="number" min="1" max="10000" step=".1" value="100" required></div></div><p class="row"><span>Ce repas : <strong id="preview">—</strong> kcal</span><button type="submit">+ Ajouter</button></p></form><div class="note">Lis les kcal pour 100 g sur l'emballage ou utilise une estimation fiable. Pour une recette, inclus aussi l'huile et les sauces.</div></section>
+<section class="card"><h2>Journal alimentaire</h2><div id="entries" class="muted">Aucun repas enregistré.</div></section>
+<section class="card"><h2>Suivi du poids</h2><div class="row"><div style="flex:1"><label for="weigh">Poids du jour (kg)</label><input id="weigh" type="number" min="20" max="400" step=".1" placeholder="88.0"></div><button id="saveWeight" style="margin-top:18px">Enregistrer</button></div><div id="weightHistory" class="small muted" style="margin-top:12px"></div></section>
+<footer>Estimation indicative, non médicale. Les besoins réels varient ; ajuste ton objectif selon l'évolution de ton poids sur 2 à 4 semaines. Données enregistrées uniquement dans ce navigateur.</footer>
+</main>
+<script>
+(function(){
+'use strict';
+const $=id=>document.getElementById(id), key='mes-calories-v1';
+const defaults={sex:'male',age:41,weight:88,height:189,activity:'1.375'};
+let state;
+try{state=JSON.parse(localStorage.getItem(key))||{}}catch(e){state={}}
+state.profile=Object.assign({},defaults,state.profile||{});
+state.meals=Array.isArray(state.meals)?state.meals:[];
+state.weights=Array.isArray(state.weights)?state.weights:[];
+function today(){const d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')}
+$('day').value=today();
+for(const id of Object.keys(defaults))$(id).value=state.profile[id];
+function save(){try{localStorage.setItem(key,JSON.stringify(state))}catch(e){console.warn('Sauvegarde indisponible',e)}}
+function n(id){return Number($(id).value)}
+function goal(){const p=state.profile;const base=10*p.weight+6.25*p.height-5*p.age+(p.sex==='male'?5:-161);return {bmr:base,total:base*Number(p.activity)}}
+function fmt(x){return Math.round(x).toLocaleString('fr-FR')}
+function render(){
+const g=goal(),day=$('day').value,items=state.meals.filter(m=>m.day===day),sum=items.reduce((s,m)=>s+m.calories,0);
+$('bmr').textContent=fmt(g.bmr);$('tdee').textContent=fmt(g.total);$('goal').textContent=fmt(g.total);$('remaining').textContent=fmt(g.total-sum);$('consumed').textContent=fmt(sum)+' kcal consommées sur '+fmt(g.total);
+$('bar').style.width=Math.min(100,Math.max(0,sum/g.total*100))+'%';$('bar').style.background=sum>g.total?'#d45b4b':'#37a478';
+const box=$('entries');box.replaceChildren();
+if(!items.length)box.textContent='Aucun repas enregistré.';
+for(const m of items){const row=document.createElement('div');row.className='entry row';const info=document.createElement('div');const strong=document.createElement('strong');strong.textContent=m.name;const detail=document.createElement('div');detail.className='muted';detail.textContent=m.grams+' g × '+m.kcal100+' kcal/100 g = '+fmt(m.calories)+' kcal';info.append(strong,detail);const del=document.createElement('button');del.className='danger';del.textContent='Supprimer';del.addEventListener('click',()=>{state.meals=state.meals.filter(x=>x.id!==m.id);save();render()});row.append(info,del);box.append(row)}
+const wh=$('weightHistory');wh.replaceChildren();for(const w of state.weights.slice(-7).reverse()){const d=document.createElement('div');d.textContent=w.day+' : '+w.value+' kg';wh.append(d)}
+}
+function preview(){const a=n('kcal100'),b=n('grams');$('preview').textContent=Number.isFinite(a*b)?fmt(a*b/100):'—'}
+for(const id of Object.keys(defaults))$(id).addEventListener('input',()=>{const p={sex:$('sex').value,age:n('age'),weight:n('weight'),height:n('height'),activity:$('activity').value};if(p.age<18||p.age>110||p.weight<20||p.weight>400||p.height<100||p.height>240)return;state.profile=p;save();render()});
+$('day').addEventListener('change',render);
+for(const id of ['kcal100','grams'])$(id).addEventListener('input',preview);
+$('mealForm').addEventListener('submit',e=>{e.preventDefault();const name=$('meal').value.trim(),k=n('kcal100'),grams=n('grams');if(!name||!Number.isFinite(k)||k<0||k>1000||!Number.isFinite(grams)||grams<=0||grams>10000)return;state.meals.push({id:Date.now()+'-'+Math.random(),day:$('day').value,name,kcal100:k,grams,calories:k*grams/100});save();$('meal').value='';$('kcal100').value='';$('grams').value='100';preview();render()});
+$('saveWeight').addEventListener('click',()=>{const value=n('weigh');if(value<20||value>400)return;state.weights=state.weights.filter(x=>x.day!==$('day').value);state.weights.push({day:$('day').value,value});state.weights.sort((a,b)=>a.day.localeCompare(b.day));save();render()});
+preview();render();
+})();
+</script></body></html>
